@@ -4,6 +4,7 @@ import java.net.ServerSocket;
 public class Server {
 	private static ServerSocket Listener; 
 	public static void main(String[] args) throws Exception {
+	@SuppressWarnings("unused")
 	int clientNumber = 0;
 	String serverAddress = "127.0.0.1";
 	int serverPort = 5000;
@@ -17,7 +18,8 @@ public class Server {
 	// run() de l'objet ClientHandler
 	while (true) {
 	// Important : la fonction accept() est bloquante: attend qu'un prochain client se connecte
-	// Une nouvetle connection : on incémente le compteur clientNumber new ClientHandler(Listener.accept(), clientNumber++).start();
+	// Une nouvetle connection : on incémente le compteur clientNumber 
+		new ClientHandler(Listener.accept(), clientNumber++).start();
 	}
 	} finally {
 	// Fermeture de la connexion
