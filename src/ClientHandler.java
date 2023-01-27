@@ -18,7 +18,8 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 			out.writeUTF("Hello from server - you are client#" + clientNumber);
 		} catch (IOException e) {
 System.out.println("Error handling client# " + clientNumber + ": " + e);
-} finally {
+} 
+		finally {
 try {
 socket.close();
 } catch (IOException e) {
