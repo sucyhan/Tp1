@@ -1,77 +1,121 @@
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.net.Socket;
+
+
 public class Client {
 	private static Socket socket;
 	public static void main(String[] args) throws Exception {
-//			String serverAddress = "127.0.0.1";
-//			int port = 5000;
+			//String IP = "127.0.0.1";
+			//int port = 5000;
 			
-			Scanner portScan = new Scanner(System.in);
-			System.out.println("Saisir un numéro de port: ");
-			int port = portScan.nextInt();
-
-			validatePort(port);
-			
-			Scanner IPScan = new Scanner(System.in);
-			System.out.println("Saisir une adresse IP: ");
-			String IP = IPScan.nextLine();
-			validateIp(IP);
+			int port = getPort();
+			String IP = getIP();
 			
 			System.out.format("Serveur lancé sur [%s:%d]", IP, port);
 			
 			Scanner commandScan = new Scanner(System.in);
 			System.out.println("Veuillez écrire une commande: ");
-			String command = commandScan.nextLine();
-			getCommand(command);
-			
 			
 			socket = new Socket(IP, port);
-			DataInputStream in = new DataInputStream(socket.getInputStream());
-			String helloMessageFromServer = in.readUTF();
-			System.out.println(helloMessageFromServer);
+			String command = commandScan.nextLine();			
+			sendCommand(command, socket);
 			socket.close();
 			
 	}
-	public static void validatePort(int portVar) {
-		if ( portVar >= 5000 && portVar <= 5050) {
-			System.out.println("Le numéro de port est: " + portVar);
-		}
-		else {
-			System.out.println("Numéro de port invalide. Saisir un nouveau numéro de port: ");
+	
+	
+	// code en commun avec Serveur... (creer une classe commune ?)
+	
+	public static int getPort()
+	{
+	
+		int port;
+		System.out.println();
+		do {
+			System.out.print("Saisir un numéro de port: ");
 			Scanner portScan = new Scanner(System.in);
-			int newPort = portScan.nextInt();
-			validatePort(newPort);
+			port = portScan.nextInt();
 		}
+		while(! validatePort(port));
+		return port;
+		
 	}
+	
+	public static  boolean validatePort(int portVar) {
+		if ( portVar >= 5000 && portVar <= 5050) 
+		{
+			System.out.println("Le numéro de port est: " + portVar);
+			return true;
+		}
+		else
+		{
+			System.out.println("Numéro de port invalide");
+			return false;
+		}
+		
+	}
+	
+	public static String getIP()
+	{
+	
+		String IP;
+		System.out.println();
+		do {
+			System.out.print("Saisir une adresse IP: ");
+			Scanner IPScan = new Scanner(System.in);
+			IP = IPScan.nextLine();
+		}
+		while(! validateIp(IP));
+		return IP;
+		
+	}
+	
+	
 	private static final Pattern PATTERN = Pattern.compile(
 	        "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
 
-	public static void validateIp(final String ip) {
+	public static boolean validateIp(final String ip) {
 		if (PATTERN.matcher(ip).matches()) {
 			System.out.println("L'adresse IP est: " + ip);
+			return true;
 		}
 		else {
 			System.out.println("L'adressse IP est invalide. Saisir une nouvelle adresse IP: ");
-			Scanner IPScan = new Scanner(System.in);
-			String newIP = IPScan.nextLine();
-			validateIp(newIP);
+			return false;
 		}
 	}
-	public static void getCommand(String comm) {
+
+	 
+	
+	// switch case des commandes
+	
+	
+	public static void sendCommand(String comm, Socket socket) throws IOException {
 		String command = comm;
+		
+		
 		if (comm.contains(" ")) {
 			String[] parts = comm.split(" ");
 			command = parts[0];
 			String directory = parts[1];
 		}
+		
+		
+		boolean Connection = true;
+		
+		while(Connection) {
 		switch (command) {
 		case "cd":
 			System.out.println("cd");
 			break;
 		case "ls":
-			System.out.println("cd");
+			DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+			out.writeUTF("ls");
+			//out.close();
 			break;
 		case "mkdir":
 			System.out.println("cd");
@@ -83,14 +127,26 @@ public class Client {
 			System.out.println("cd");
 			break;
 		case "exit":
-			System.out.println("cd");
+			Connection = false;
+			socket.close();
+			System.out.println("Vous avez été déconnecté.");
 			break;
 		default:
 			System.out.println("La commande est invalide. Saisir une nouvelle commande: ");
+			
 			Scanner commScan = new Scanner(System.in);
 			String newComm = commScan.nextLine();
-			getCommand(newComm);
+			sendCommand(newComm, socket);
 			break;
+		} 
+		
+		
+		DataInputStream in = new DataInputStream(socket.getInputStream());
+		String rsp = in.readUTF();
+		System.out.println(rsp);
+		//in.close();
+		//System.out.println("in closed");
+		//sendCommand(command, socket);
 		}
 	}
 }

@@ -1,8 +1,14 @@
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class ClientHandler extends Thread { // pour traiter la demande de chaque client sur un socket particulier
+public class ClientHandler implements Runnable //extends Thread { // pour traiter la demande de chaque client sur un socket particulier
+{	
 	private Socket socket;
 	private int clientNumber;
 
@@ -14,8 +20,23 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 
 	public void run() { 
 		try {
-			DataOutputStream out = new DataOutputStream(socket.getOutputStream());  
-			out.writeUTF("Hello from server - you are client#" + clientNumber);
+			
+			DataInputStream in = new DataInputStream(socket.getInputStream());
+			String rsp = in.readUTF();
+			System.out.println(Thread.currentThread().getName() + " -> " + rsp);
+			
+			List<String> files =  Stream.of(new File(".").listFiles())
+		    //.filter(file -> !file.isDirectory())
+		    .map(File::getName)
+		    .collect(Collectors.toList());
+			
+			DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+			out.writeUTF(files.toString());
+			System.out.println(Thread.currentThread().getName() + " -> " + files.toString());
+			
+			
+			//DataOutputStream out = new DataOutputStream(socket.getOutputStream());  
+			//out.writeUTF("Hello from server - you are client#" + clientNumber);
 		} catch (IOException e) {
 System.out.println("Error handling client# " + clientNumber + ": " + e);
 } 
