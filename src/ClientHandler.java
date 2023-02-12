@@ -22,29 +22,60 @@ public class ClientHandler implements Runnable //extends Thread { // pour traite
 		try {
 			
 			DataInputStream in = new DataInputStream(socket.getInputStream());
-			String rsp = in.readUTF();
-			System.out.println(Thread.currentThread().getName() + " -> " + rsp);
+			String command = in.readUTF();
+			System.out.println(Thread.currentThread().getName() + " -> " + command);
 			
-			List<String> files =  Stream.of(new File(".").listFiles())
-		    //.filter(file -> !file.isDirectory())
-		    .map(File::getName)
-		    .collect(Collectors.toList());
+			String directory = "";
+			if (command.contains(" ")) {
+				String[] parts = command.split(" ");
+				command = parts[0];
+				directory = parts[1];
+			}
 			
-			DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-			out.writeUTF(files.toString());
-			System.out.println(Thread.currentThread().getName() + " -> " + files.toString());
+			DataOutputStream out;
+			
+			switch (command) {
+			case "ls": 
+				List<String> files =  Stream.of(new File(".").listFiles())
+			    //.filter(file -> !file.isDirectory())
+			    .map(File::getName)
+			    .collect(Collectors.toList());
+				
+				out = new DataOutputStream(socket.getOutputStream());
+				out.writeUTF(files.toString());
+				System.out.println(Thread.currentThread().getName() + " -> " + files.toString());
+				break;
+			case "mkdir":
+				boolean success = new File("./"+directory).mkdirs();
+				out = new DataOutputStream(socket.getOutputStream());
+				out.writeUTF("directory " + directory + (success ? " created": " creation failed"));
+				break;
+				
+			
+			default:
+				System.err.println("Unexpected value: " + command);
+			}
+			
 			
 			
 			//DataOutputStream out = new DataOutputStream(socket.getOutputStream());  
 			//out.writeUTF("Hello from server - you are client#" + clientNumber);
-		} catch (IOException e) {
-System.out.println("Error handling client# " + clientNumber + ": " + e);
-} 
-		finally {
-try {
-socket.close();
-} catch (IOException e) {
-System.out.println("Couldn't close a socket, what's going on?");}
-System.out.println("Connection with client# " + clientNumber+ " closed");}
-}
+		}
+		catch (IOException e) 
+		{
+			System.out.println("Error handling client# " + clientNumber + ": " + e);
+		} 
+		finally
+		{
+			try 
+			{
+				socket.close();
+			} 
+			catch (IOException e) 
+			{
+				System.out.println("Couldn't close a socket, what's going on?");
+			}
+		System.out.println("Connection with client# " + clientNumber+ " closed");
+		}
+	}
 }

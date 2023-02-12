@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 
 public class Client {
@@ -17,13 +18,8 @@ public class Client {
 			
 			System.out.format("Serveur lancé sur [%s:%d]", IP, port);
 			
-			Scanner commandScan = new Scanner(System.in);
-			System.out.println("Veuillez écrire une commande: ");
 			
-			socket = new Socket(IP, port);
-			String command = commandScan.nextLine();			
-			sendCommand(command, socket);
-			socket.close();
+			sendCommand(IP, port);
 			
 	}
 	
@@ -94,31 +90,69 @@ public class Client {
 	// switch case des commandes
 	
 	
-	public static void sendCommand(String comm, Socket socket) throws IOException {
-		String command = comm;
+	public static void sendCommand(String IP, int port)
+	{
+
+		Scanner commandScan = new Scanner(System.in);
+		System.out.println("\nVeuillez écrire une commande: ");
 		
 		
-		if (comm.contains(" ")) {
-			String[] parts = comm.split(" ");
+		String command = commandScan.nextLine();
+		
+		Socket socket;
+		try 
+		{
+			socket = new Socket(IP, port);
+		}
+		catch (Exception e) 
+		{		
+			e.printStackTrace();
+			return;
+		} 
+		
+		String directory = "";
+		if (command.contains(" ")) {
+			String[] parts = command.split(" ");
 			command = parts[0];
-			String directory = parts[1];
+			directory = parts[1];
 		}
 		
 		
-		boolean Connection = true;
+		DataOutputStream out;
 		
-		while(Connection) {
+		//while(Connection) {
 		switch (command) {
 		case "cd":
 			System.out.println("cd");
 			break;
 		case "ls":
-			DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-			out.writeUTF("ls");
+			
+			try {
+				out = new DataOutputStream(socket.getOutputStream());
+				out.writeUTF("ls");
+			} 
+			catch (IOException e) {
+				// TODO Auto-generated catch block
+				System.err.println("erreur a l'envoie");
+				e.printStackTrace();
+				return;
+			}
+			
 			//out.close();
 			break;
 		case "mkdir":
-			System.out.println("cd");
+			
+			try {
+				out = new DataOutputStream(socket.getOutputStream());
+				out.writeUTF("mkdir " + directory);
+			} 
+			catch (IOException e) {
+				// TODO Auto-generated catch block
+				System.err.println("erreur a l'envoie");
+				e.printStackTrace();
+				return;
+			}
+			
 			break;
 		case "upload":
 			System.out.println("cd");
@@ -127,26 +161,39 @@ public class Client {
 			System.out.println("cd");
 			break;
 		case "exit":
-			Connection = false;
-			socket.close();
+			
+			try {
+				socket.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			System.out.println("Vous avez été déconnecté.");
-			break;
+			return;
 		default:
 			System.out.println("La commande est invalide. Saisir une nouvelle commande: ");
 			
-			Scanner commScan = new Scanner(System.in);
-			String newComm = commScan.nextLine();
-			sendCommand(newComm, socket);
+
+			sendCommand(IP, port);
 			break;
 		} 
 		
 		
-		DataInputStream in = new DataInputStream(socket.getInputStream());
-		String rsp = in.readUTF();
-		System.out.println(rsp);
+		
+		try(DataInputStream in = new DataInputStream(socket.getInputStream()))
+		{			
+			String rsp = in.readUTF();
+			System.out.println(rsp);
+		}
+		catch (IOException e) {
+			System.err.println("erreur a la reception");
+			e.printStackTrace();
+		}
+		sendCommand(IP, port);
+	
 		//in.close();
 		//System.out.println("in closed");
 		//sendCommand(command, socket);
-		}
+		//}
 	}
 }
