@@ -1,5 +1,9 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.File;
+import java.nio.file.Path;
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.regex.Pattern;
@@ -9,6 +13,7 @@ import java.net.UnknownHostException;
 
 public class Client {
 	private static Socket socket;
+	private static Path actualPath;
 	public static void main(String[] args) throws Exception {
 			//String IP = "127.0.0.1";
 			//int port = 5000;
@@ -152,13 +157,27 @@ public class Client {
 				e.printStackTrace();
 				return;
 			}
+			break;
 			
-			break;
 		case "upload":
+			try {
+				uploadFile(directory);
+			} 
+			catch(IOException e) {
+				System.err.println("erreur a l'envoie");
+				e.printStackTrace();
+			}
 			System.out.println("cd");
 			break;
+			
 		case "download":
-			System.out.println("cd");
+			try {
+				if(fileExists(directory)) {
+					downloadFile(directory);
+				}
+			} catch(IOException e) {
+				e.printStackTrace();
+			}
 			break;
 		case "exit":
 			
@@ -195,5 +214,46 @@ public class Client {
 		//System.out.println("in closed");
 		//sendCommand(command, socket);
 		//}
+	}
+	
+	private static boolean fileExists(String fileName){
+    	
+    	File file = actualPath.resolve(fileName).toFile();
+    	if (!(file.isFile())){
+    		System.out.println("Ce fichier n'existe pas.");
+    		return false;
+    	} else {
+    		return true;
+    	}
+    }
+	
+	
+	private static void uploadFile(String file)throws IOException {
+		DataInputStream input = new DataInputStream(socket.getInputStream());
+		FileOutputStream output = new FileOutputStream(file);
+		byte[] buffer = new byte[4096];
+		long size = input.readLong();
+		int bufferSize = 0;
+		while(size > 0 && ((bufferSize = input.read(buffer)) > 0 )) {
+			output.write(buffer, 0, bufferSize);
+			size -= bufferSize;
+		}
+		output.close();
+		System.out.println("Le fichier " + file + " a bien ete televerse");
+	}
+
+
+	private static void downloadFile(String fileName) throws IOException{
+		File file = actualPath.resolve(fileName).toFile();
+		DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+		FileInputStream input = new FileInputStream(file.toString());
+		byte[] buffer = new byte[4096];
+		int read;
+		output.writeLong(file.length());
+		while ((read=input.read(buffer)) > 0) {
+			output.write(buffer, 0, read);
+		}
+		input.close();
+		System.out.println("Le fichier " + fileName + " a bien ete telecharge");
 	}
 }
