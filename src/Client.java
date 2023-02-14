@@ -17,7 +17,7 @@ public class Client {
 
 		DataInputStream in = new DataInputStream(socket.getInputStream());
 		DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-				String helloMessageFromServer = in.readUTF();
+		String helloMessageFromServer = in.readUTF();
 		System.out.println(helloMessageFromServer);
 		Thread inputThread = new Thread(new Runnable() {
 			String message;
@@ -41,6 +41,7 @@ public class Client {
 					while(true) {
 						BufferedReader reader = new BufferedReader (new InputStreamReader(System.in));
 						message = reader.readLine();
+						out.writeUTF(message);
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -117,8 +118,8 @@ public class Client {
 			}
 
 		}
-		public static void sendCommand(String message) throws Exception{
+//		public static void sendCommand(String message) throws Exception{
 //			dataOutputStream.writeUTF(message);
-		}
+//		}
 
 }

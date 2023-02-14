@@ -20,10 +20,13 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 			DataInputStream in = new DataInputStream(socket.getInputStream());
 			DataOutputStream out = new DataOutputStream(socket.getOutputStream()); // création de canal d’envoi out.writeUTF("Hello from server - you are client#" + clientNumber); // envoi de message} catch (IOException e) {
 			out.writeUTF("Hello from server - you are client#" + clientNumber);
-			String command = in.readUTF();
-			System.out.println(Thread.currentThread().getName() + " -> " + command);
+			System.out.println("Veuillez entrer une commande: ");
+			
 
 			while(true) {
+				String command = in.readUTF();
+				System.out.println(command);
+				System.out.println(Thread.currentThread().getName() + " -> " + command);
 
 				String directory = "";
 				if (command.contains(" ")) {
@@ -34,7 +37,7 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 
 				switch (command) {
 				case "cd": {
-//					commandCd(directory);
+					System.out.println("haha");
 					break;
 				}
 				case "ls": 
