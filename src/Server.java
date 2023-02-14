@@ -1,65 +1,39 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-
 public class Server {
-	private static ServerSocket Listener; 
-
+	private static ServerSocket Listener; // Application Serveur
 	public static void main(String[] args) throws Exception {
-	@SuppressWarnings("unused")
-	int clientNumber = 0;
-//	String IP = "127.0.0.1";
-//	int port = 5000;
-	
+		// Compteur incrémenté à chaque connexion d'un client au serveur
+		int clientNumber = 0;
+		// Adresse et port du serveur
+		//		String serverAddress = "127.0.0.1";
+		//		int serverPort = 5000;
+		int serverPort = getPort();
+		String serverAddress = getIP();
 
-
-	int port = getPort();
-	String IP = getIP();
-	
-
-	
-	Listener = new ServerSocket();
-	Listener.setReuseAddress(true);
-	InetAddress serverIP = InetAddress.getByName(IP);
-	Listener.bind(new InetSocketAddress(serverIP, port));	
-	System.out.format("The server is running on %s:%d%n", IP, port);
-	
-	
-	try 
-	{
-	// À chaque fois qu'un nouveau client se, connecte, on exécute la fonction
-	// run() de l'objet ClientHandler
-		while (true) 
-		{
-	// Important : la fonction accept() est bloquante: attend qu'un prochain client se connecte
-	// Une nouvelle connection : on incémente le compteur clientNumber 
-			
-			//System.out.println(Thread.currentThread().getName() + " -> BEFORE LISTEN");
-			Socket socket = Listener.accept();
-			//System.out.println(Thread.currentThread().getName() + " -> AFTER LISTEN");
-			new Thread(new ClientHandler(socket, clientNumber++)).start();
-			
-		}
-	} 
-	finally 
-	{
-	// Fermeture de la connexion
-	//Listener.close();
-	} 
-}
-	
-	// code en commun avec Client... (creer une classe commune ?)
-	
+		// Création de la connexien pour communiquer ave les, clients
+		Listener = new ServerSocket();
+		Listener.setReuseAddress(true);
+		InetAddress serverIP = InetAddress.getByName(serverAddress);
+		// Association de l'adresse et du port à la connexien
+		Listener.bind(new InetSocketAddress(serverIP, serverPort));
+		System.out.format("The server is running on %s:%d%n", serverAddress, serverPort);
+		try {
+			// À chaque fois qu'un nouveau client se, connecte, on exécute la fonstion
+			// run() de l'objet ClientHandler
+			while (true) {
+				// Important : la fonction accept() est bloquante: attend qu'un prochain client se connecte
+				// Une nouvetle connection : on incémente le compteur clientNumber new ClientHandler(Listener.accept(), clientNumber++).start();
+				new ClientHandler(Listener.accept(), clientNumber++).start();
+			}
+		} finally {
+			// Fermeture de la connexion
+			Listener.close();
+		} 
+	}
 	public static int getPort()
 	{
 	
@@ -104,7 +78,7 @@ public class Server {
 		
 	}
 	
-	// Source: https://stackoverflow.com/questions/5667371/validate-ipv4-address-in-java
+	
 	private static final Pattern PATTERN = Pattern.compile(
 	        "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
 

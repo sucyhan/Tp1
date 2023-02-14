@@ -1,50 +1,89 @@
+import java.awt.List;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-public class ClientHandler implements Runnable //extends Thread { // pour traiter la demande de chaque client sur un socket particulier
-{	
-	private Socket socket;
-	private int clientNumber;
-
+import java.nio.file.Path;
+public class ClientHandler extends Thread { // pour traiter la demande de chaque client sur un socket particulier
+	private Socket socket; 
+	private int clientNumber; 
+	private String path = ".\\";
 	public ClientHandler(Socket socket, int clientNumber) {
 		this.socket = socket;
-		this.clientNumber = clientNumber;
-		System.out.println("New connection with client#" + clientNumber + " at" + socket);
-	}
+		this.clientNumber = clientNumber; 
+		System.out.println("New connection with client#" + clientNumber + " at" + socket);}
 
-	public void run() { 
+
+	public void run() { // Création de thread qui envoi un message à un client
 		try {
-			
 			DataInputStream in = new DataInputStream(socket.getInputStream());
-			String rsp = in.readUTF();
-			System.out.println(Thread.currentThread().getName() + " -> " + rsp);
-			
-			List<String> files =  Stream.of(new File(".").listFiles())
-		    //.filter(file -> !file.isDirectory())
-		    .map(File::getName)
-		    .collect(Collectors.toList());
-			
-			DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-			out.writeUTF(files.toString());
-			System.out.println(Thread.currentThread().getName() + " -> " + files.toString());
-			
-			
-			//DataOutputStream out = new DataOutputStream(socket.getOutputStream());  
-			//out.writeUTF("Hello from server - you are client#" + clientNumber);
+			DataOutputStream out = new DataOutputStream(socket.getOutputStream()); // création de canal d’envoi out.writeUTF("Hello from server - you are client#" + clientNumber); // envoi de message} catch (IOException e) {
+			out.writeUTF("Hello from server - you are client#" + clientNumber);
+			String command = in.readUTF();
+			System.out.println(Thread.currentThread().getName() + " -> " + command);
+
+			while(true) {
+
+				String directory = "";
+				if (command.contains(" ")) {
+					String[] parts = command.split(" ");
+					command = parts[0];
+					directory = parts[1];
+				}
+
+				switch (command) {
+				case "cd": {
+//					commandCd(directory);
+					break;
+				}
+				case "ls": 
+//					System.out.println(startDirectory);
+//					List<String> files =  Stream.of(this.startDirectory.listFiles())
+//							//.filter(file -> !file.isDirectory())
+//							.map(File::getName)
+//							.collect(Collectors.toList());
+//
+//					out = new DataOutputStream(socket.getOutputStream());
+//					out.writeUTF(files.toString());
+//					System.out.println(Thread.currentThread().getName() + " -> " + files.toString());
+					break;
+				case "mkdir":
+//					boolean success = new File("./"+directory).mkdirs();
+//					out = new DataOutputStream(socket.getOutputStream());
+//					out.writeUTF("Le dossier " + directory + (success ? " a bien été créé": " creation failed"));
+					break;
+
+
+				default:
+					System.err.println("Unexpected value: " + command);
+				}
+
+			}
 		} catch (IOException e) {
-System.out.println("Error handling client# " + clientNumber + ": " + e);
-} 
+			System.out.println("Error handling client# " + clientNumber + ": " + e);
+		}
 		finally {
-try {
-socket.close();
-} catch (IOException e) {
-System.out.println("Couldn't close a socket, what's going on?");}
-System.out.println("Connection with client# " + clientNumber+ " closed");}
+			try {
+				socket.close();
+			} catch (IOException e) {
+				System.out.println("Couldn't close a socket, what's going on?");}
+			System.out.println("Connection with client# " + clientNumber+ " closed");}
+	}
+//	private void commandCd(String directory) {
+//		out = new DataOutputStream(socket.getOutputStream());
+//		String newPath = this.path + "\\" + directory;
+//		File file = new File(newPath);
+//		if(file.isDirectory()) {
+//			this.path = newPath;
+//			out.writeUTF("Vous êtes dans le dossier " + directory);
+//		}
+//		else {
+//			out.writeUTF("Le dossier " + directory + " n'existe pas");
+//
+//		}
+//	}
 }
-}
+
+
+
