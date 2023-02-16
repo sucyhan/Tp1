@@ -52,9 +52,8 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 					commandLs(path);
 					break;
 				case "mkdir":
-					//					boolean success = new File("./"+directory).mkdirs();
-					//					out = new DataOutputStream(socket.getOutputStream());
-					//					out.writeUTF("Le dossier " + directory + (success ? " a bien été créé": " creation failed"));
+					commandMkdir(path, directory);
+
 					break;
 
 
@@ -141,6 +140,20 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 		out = new DataOutputStream(socket.getOutputStream());
 		out.writeUTF(files.toString());
 		System.out.println(Thread.currentThread().getName() + " -> " + files.toString());
+	}
+	private static void commandMkdir(String presentPath, String directory) throws IOException {
+//		boolean success = new File(presentPath).mkdir();
+		DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+//		out.writeUTF("Le dossier " + directory + (success ? " a bien été créé": " creation failed"));
+		File destinationFile = new File(presentPath + "/" + directory);
+		out.writeUTF(presentPath);
+		destinationFile.mkdir();
+		if(destinationFile.exists()) {
+			out.writeUTF("Le dossier " + directory +  " a bien été créé");
+		} else {
+			out.writeUTF("Le dossier " + directory + "n'a pas pu être créé");
+		}
+		
 	}
 }
 
