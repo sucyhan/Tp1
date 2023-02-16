@@ -3,6 +3,8 @@ import java.util.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Path;
@@ -53,10 +55,28 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 					break;
 				case "mkdir":
 					commandMkdir(path, directory);
-
 					break;
+				case "upload":
+                    try {
+                        saveFile(path+"/"+directory);
+                        out.writeUTF("Uploaded " + directory);
+                    } catch(IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
 
-
+                case "download":
+                    try {
+                        sendFile(path+"/"+directory);
+                    } catch(IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                    
+                case "exit":
+                	out.writeUTF("Fin de la connection...");
+                	break;
+                	
 				default:
 					System.err.println("Unexpected value: " + command);
 				}
@@ -138,10 +158,40 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 		} else {
 			out.writeUTF("Le dossier " + directory + "n'a pas pu être créé");
 		}
-		
 	}
 	
-	
+	private static void saveFile(String path)throws IOException {
+        int bytes = 0;
+
+        DataInputStream input = new DataInputStream(socket.getInputStream());
+        FileOutputStream output = new FileOutputStream(path);
+
+        long size = input.readLong();
+        byte[] buffer = new byte[(int)size];
+        while (size > 0 && (bytes = input.read(buffer, 0, (int)Math.min(buffer.length, size))) != -1) {
+            output.write(buffer,0,bytes);
+            size -= bytes;
+        }
+        output.close();
+        System.out.println("Le fichier a bien ete televerse");
+    }
+
+    private static void sendFile(String path)throws IOException{
+        int bufferSize;
+        File newFile = new File(path);
+        FileInputStream input = new FileInputStream(newFile.toString());
+        DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+
+        byte[] buffer = new byte[(int)newFile.length()];
+        output.writeLong(newFile.length());
+
+        while((bufferSize = input.read(buffer)) > 0) {
+            output.write(buffer, 0, bufferSize);
+            output.flush();
+        }
+        input.close();
+        output.writeUTF("Telechargement...");
+    }
 }
 
 
