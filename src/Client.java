@@ -25,6 +25,7 @@ public class Client {
 			public void run() {
 				try {
 					while (true) {
+						System.out.println("\nVeuillez entrer une commande: ");
 						message = in.readUTF();
 						System.out.print(message);
 					}

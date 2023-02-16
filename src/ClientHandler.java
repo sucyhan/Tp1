@@ -1,27 +1,35 @@
-import java.awt.List;
+import java.util.List;
+import java.util.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Path;
+import java.util.stream.Stream;
 public class ClientHandler extends Thread { // pour traiter la demande de chaque client sur un socket particulier
-	private Socket socket; 
+	private static Socket socket; 
 	private int clientNumber; 
-	private String path = ".\\";
+	private static String path;
+	private static File startDirectory = new File ("Start");
 	public ClientHandler(Socket socket, int clientNumber) {
 		this.socket = socket;
 		this.clientNumber = clientNumber; 
+		this.startDirectory = new File ("Start");
+		this.startDirectory.mkdir();
+		this.path = ".";
+
 		System.out.println("New connection with client#" + clientNumber + " at" + socket);}
 
 
 	public void run() { // Création de thread qui envoi un message à un client
 		try {
 			DataInputStream in = new DataInputStream(socket.getInputStream());
-			DataOutputStream out = new DataOutputStream(socket.getOutputStream()); // création de canal d’envoi out.writeUTF("Hello from server - you are client#" + clientNumber); // envoi de message} catch (IOException e) {
+			DataOutputStream out = new DataOutputStream(socket.getOutputStream()); 
 			out.writeUTF("Hello from server - you are client#" + clientNumber);
-			System.out.println("Veuillez entrer une commande: ");
-			
+			//			System.out.println("Veuillez entrer une commande: ");
+			//			out.writeUTF(message);
+
 
 			while(true) {
 				String command = in.readUTF();
@@ -37,24 +45,16 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 
 				switch (command) {
 				case "cd": {
-					System.out.println("haha");
+					path = commandCd(path,directory);
 					break;
 				}
 				case "ls": 
-//					System.out.println(startDirectory);
-//					List<String> files =  Stream.of(this.startDirectory.listFiles())
-//							//.filter(file -> !file.isDirectory())
-//							.map(File::getName)
-//							.collect(Collectors.toList());
-//
-//					out = new DataOutputStream(socket.getOutputStream());
-//					out.writeUTF(files.toString());
-//					System.out.println(Thread.currentThread().getName() + " -> " + files.toString());
+					commandLs(path);
 					break;
 				case "mkdir":
-//					boolean success = new File("./"+directory).mkdirs();
-//					out = new DataOutputStream(socket.getOutputStream());
-//					out.writeUTF("Le dossier " + directory + (success ? " a bien été créé": " creation failed"));
+					//					boolean success = new File("./"+directory).mkdirs();
+					//					out = new DataOutputStream(socket.getOutputStream());
+					//					out.writeUTF("Le dossier " + directory + (success ? " a bien été créé": " creation failed"));
 					break;
 
 
@@ -73,20 +73,75 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 				System.out.println("Couldn't close a socket, what's going on?");}
 			System.out.println("Connection with client# " + clientNumber+ " closed");}
 	}
-//	private void commandCd(String directory) {
-//		out = new DataOutputStream(socket.getOutputStream());
-//		String newPath = this.path + "\\" + directory;
-//		File file = new File(newPath);
-//		if(file.isDirectory()) {
-//			this.path = newPath;
-//			out.writeUTF("Vous êtes dans le dossier " + directory);
-//		}
-//		else {
-//			out.writeUTF("Le dossier " + directory + " n'existe pas");
-//
-//		}
-//	}
-}
+	private static  String commandCd(String presentPath, String directory) throws IOException {
+		String newPath, returnDirectory ="";
+		DataOutputStream out = new DataOutputStream(socket.getOutputStream()); 
 
+		if(directory.equals("..")) {
+			String[] splitPath = presentPath.split("/");
+			if (splitPath.length == 1) {
+				newPath = presentPath;
+			} else {
+				//				for(int i = 0; i < splitPath.length - 1; i++) {
+				//					newPath += splitPath[i];
+				//					if(i < splitPath.length - 2) {
+				//						newPath += "/";
+				//					}
+				//				}
+				returnDirectory = splitPath[-1];
+				newPath = presentPath + "/" + returnDirectory;
+			}
+			//out.writeUTF("Vous êtes dans retourné dans le dossier " + directory);
+		}
+		File destinationFile = new File(presentPath + "/" + directory);
+		newPath = presentPath + "/" + directory;
+		if (destinationFile.exists()) {
+			presentPath = newPath;
+			out.writeUTF(presentPath);
+			out.writeUTF("Vous êtes dans le dossier " + directory);
+			return presentPath;
+		}
+		out.writeUTF("Le dossier " + directory + " n'existe pas");
+		out.writeUTF(presentPath);
+		return presentPath;
+
+
+
+		//File destinationFile = new File(startDirectory.getAbsolutePath() + "\\" + directory);
+
+		//		if(destinationFile.isDirectory()) {
+		//			startDirectory = destinationFile;
+		////			out.writeUTF(startDirectory);
+		//			out.writeUTF("Vous êtes dans le dossier " + directory);
+		//		}
+		//		else {
+		//			out.writeUTF("Le dossier " + directory + " n'existe pas");
+		//
+		//		}
+	}
+	private static void commandLs(String presentPath) throws IOException{
+		DataOutputStream out = new DataOutputStream(socket.getOutputStream()); 
+		File[] files =  new File(presentPath).listFiles();
+		//				.filter(file -> !file.isDirectory())
+		//				.map(File::getName)
+		//				.collect(Collectors.toList()));
+		for (File file: files) {
+			if(!(file.getName().contains("."))) {
+				if (file.isDirectory()) {
+					out.writeUTF("[Folder]" + file.getName());
+
+				} else if(file.isFile()) {
+					out.writeUTF("[File]" + file.getName());
+				} else {
+					out.writeUTF("L'élément n'est pas un dossier ou un fichier");
+				}
+			}
+		}
+
+		out = new DataOutputStream(socket.getOutputStream());
+		out.writeUTF(files.toString());
+		System.out.println(Thread.currentThread().getName() + " -> " + files.toString());
+	}
+}
 
 
