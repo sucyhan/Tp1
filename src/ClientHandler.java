@@ -73,57 +73,41 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 			System.out.println("Connection with client# " + clientNumber+ " closed");}
 	}
 	private static  String commandCd(String presentPath, String directory) throws IOException {
-		String newPath, returnDirectory ="";
+		String newPath = "";
+		File destinationFile = new File(presentPath + "/" + directory);
+		String returnDirectory ="";
 		DataOutputStream out = new DataOutputStream(socket.getOutputStream()); 
 
 		if(directory.equals("..")) {
 			String[] splitPath = presentPath.split("/");
 			if (splitPath.length == 1) {
 				newPath = presentPath;
+				out.writeUTF("Vous êtes au dossier de départ.");
 			} else {
-				//				for(int i = 0; i < splitPath.length - 1; i++) {
-				//					newPath += splitPath[i];
-				//					if(i < splitPath.length - 2) {
-				//						newPath += "/";
-				//					}
-				//				}
-				returnDirectory = splitPath[-1];
-				newPath = presentPath + "/" + returnDirectory;
+				for(int i = 0; i < splitPath.length - 1; i++) {
+					newPath += splitPath[i];
+					if(i < splitPath.length - 2) {
+						newPath += "/";
+					}
+				}
+				out.writeUTF("Vous êtes retournés au dossier précédent.");
+				return newPath;
 			}
-			//out.writeUTF("Vous êtes dans retourné dans le dossier " + directory);
 		}
-		File destinationFile = new File(presentPath + "/" + directory);
-		newPath = presentPath + "/" + directory;
-		if (destinationFile.exists()) {
+		else {
+			if(destinationFile.exists()) {
+			newPath = presentPath + "/" + directory;
 			presentPath = newPath;
-			out.writeUTF(presentPath);
 			out.writeUTF("Vous êtes dans le dossier " + directory);
 			return presentPath;
 		}
-		out.writeUTF("Le dossier " + directory + " n'existe pas");
-		out.writeUTF(presentPath);
+		out.writeUTF("Le dossier " + directory + " n'existe pas.");
+		}
 		return presentPath;
-
-
-
-		//File destinationFile = new File(startDirectory.getAbsolutePath() + "\\" + directory);
-
-		//		if(destinationFile.isDirectory()) {
-		//			startDirectory = destinationFile;
-		////			out.writeUTF(startDirectory);
-		//			out.writeUTF("Vous êtes dans le dossier " + directory);
-		//		}
-		//		else {
-		//			out.writeUTF("Le dossier " + directory + " n'existe pas");
-		//
-		//		}
 	}
 	private static void commandLs(String presentPath) throws IOException{
 		DataOutputStream out = new DataOutputStream(socket.getOutputStream()); 
 		File[] files =  new File(presentPath).listFiles();
-		//				.filter(file -> !file.isDirectory())
-		//				.map(File::getName)
-		//				.collect(Collectors.toList()));
 		for (File file: files) {
 			if(!(file.getName().contains("."))) {
 				if (file.isDirectory()) {
@@ -136,15 +120,16 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 				}
 			}
 		}
+		if (files.length == 0) {
+			out.writeUTF("Le répertoire ne contient pas de dossier ou de fichier.");
+		}
 
 		out = new DataOutputStream(socket.getOutputStream());
 		out.writeUTF(files.toString());
 		System.out.println(Thread.currentThread().getName() + " -> " + files.toString());
 	}
 	private static void commandMkdir(String presentPath, String directory) throws IOException {
-//		boolean success = new File(presentPath).mkdir();
 		DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-//		out.writeUTF("Le dossier " + directory + (success ? " a bien été créé": " creation failed"));
 		File destinationFile = new File(presentPath + "/" + directory);
 		out.writeUTF(presentPath);
 		destinationFile.mkdir();
@@ -155,6 +140,8 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 		}
 		
 	}
+	
+	
 }
 
 

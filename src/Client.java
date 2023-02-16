@@ -119,8 +119,6 @@ public class Client {
 			}
 
 		}
-//		public static void sendCommand(String message) throws Exception{
-//			dataOutputStream.writeUTF(message);
-//		}
+
 
 }
