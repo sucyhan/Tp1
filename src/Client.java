@@ -53,7 +53,7 @@ public class Client {
 					while(true) {
 						BufferedReader reader = new BufferedReader (new InputStreamReader(System.in));
 						message = reader.readLine();
-						if(message.startsWith("upload ")) {
+						if(message.startsWith("upload")) {
 							String fileName = message.substring(7);
 							uploadFile(fileName);
 							out.writeUTF(message);

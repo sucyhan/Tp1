@@ -57,26 +57,35 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 					commandMkdir(path, directory);
 					break;
 				case "upload":
-                    try {
-                        saveFile(path+"/"+directory);
-                        out.writeUTF("Uploaded " + directory);
-                    } catch(IOException e) {
-                        e.printStackTrace();
-                    }
-                    break;
+					try {
+						if(path == "") {
+							saveFile(directory);
+						}else {
+							saveFile(path+"/"+directory);
+						}
+						out.writeUTF("Uploaded " + directory);
+					} catch(IOException e) {
+						e.printStackTrace();
+					}
+					break;
 
-                case "download":
-                    try {
-                        sendFile(path+"/"+directory);
-                    } catch(IOException e) {
-                        e.printStackTrace();
-                    }
-                    break;
-                    
-                case "exit":
-                	out.writeUTF("Fin de la connection...");
-                	break;
-                	
+				case "download":
+					try {
+						if(path == "") {
+							sendFile(directory);
+						}else {
+							sendFile(path+"/"+directory);
+						}
+						out.writeUTF("Downloaded " + directory);
+					} catch(IOException e) {
+						e.printStackTrace();
+					}
+					break;
+
+				case "exit":
+					out.writeUTF("Fin de la connection...");
+					break;
+
 				default:
 					System.err.println("Unexpected value: " + command);
 				}
@@ -116,12 +125,12 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 		}
 		else {
 			if(destinationFile.exists()) {
-			newPath = presentPath + "/" + directory;
-			presentPath = newPath;
-			out.writeUTF("Vous êtes dans le dossier " + directory);
-			return presentPath;
-		}
-		out.writeUTF("Le dossier " + directory + " n'existe pas.");
+				newPath = presentPath + "/" + directory;
+				presentPath = newPath;
+				out.writeUTF("Vous êtes dans le dossier " + directory);
+				return presentPath;
+			}
+			out.writeUTF("Le dossier " + directory + " n'existe pas.");
 		}
 		return presentPath;
 	}
@@ -159,39 +168,39 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 			out.writeUTF("Le dossier " + directory + "n'a pas pu être créé");
 		}
 	}
-	
+
 	private static void saveFile(String path)throws IOException {
-        int bytes = 0;
+		int bytes = 0;
 
-        DataInputStream input = new DataInputStream(socket.getInputStream());
-        FileOutputStream output = new FileOutputStream(path);
+		DataInputStream input = new DataInputStream(socket.getInputStream());
+		FileOutputStream output = new FileOutputStream(path);
 
-        long size = input.readLong();
-        byte[] buffer = new byte[(int)size];
-        while (size > 0 && (bytes = input.read(buffer, 0, (int)Math.min(buffer.length, size))) != -1) {
-            output.write(buffer,0,bytes);
-            size -= bytes;
-        }
-        output.close();
-        System.out.println("Le fichier a bien ete televerse");
-    }
+		long size = input.readLong();
+		byte[] buffer = new byte[(int)size];
+		while (size > 0 && (bytes = input.read(buffer, 0, (int)Math.min(buffer.length, size))) != -1) {
+			output.write(buffer,0,bytes);
+			size -= bytes;
+		}
+		output.close();
+		System.out.println("Le fichier a bien ete televerse");
+	}
 
-    private static void sendFile(String path)throws IOException{
-        int bufferSize;
-        File newFile = new File(path);
-        FileInputStream input = new FileInputStream(newFile.toString());
-        DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+	private static void sendFile(String path)throws IOException{
+		int bufferSize;
+		File newFile = new File(path);
+		FileInputStream input = new FileInputStream(newFile.toString());
+		DataOutputStream output = new DataOutputStream(socket.getOutputStream());
 
-        byte[] buffer = new byte[(int)newFile.length()];
-        output.writeLong(newFile.length());
+		byte[] buffer = new byte[(int)newFile.length()];
+		output.writeLong(newFile.length());
 
-        while((bufferSize = input.read(buffer)) > 0) {
-            output.write(buffer, 0, bufferSize);
-            output.flush();
-        }
-        input.close();
-        output.writeUTF("Telechargement...");
-    }
+		while((bufferSize = input.read(buffer)) > 0) {
+			output.write(buffer, 0, bufferSize);
+			output.flush();
+		}
+		input.close();
+		output.writeUTF("Telechargement...");
+	}
 }
 
 
