@@ -8,34 +8,52 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Stream;
 public class ClientHandler extends Thread { // pour traiter la demande de chaque client sur un socket particulier
 	private static Socket socket; 
 	private int clientNumber; 
+	private DataInputStream in = null;
+	private static DataOutputStream out = null;
 	private static String path;
 	private static File startDirectory = new File ("Start");
 	public ClientHandler(Socket socket, int clientNumber) {
 		this.socket = socket;
 		this.clientNumber = clientNumber; 
-		this.startDirectory = new File ("Start");
-		this.startDirectory.mkdir();
-		this.path = ".";
 
 		System.out.println("New connection with client#" + clientNumber + " at" + socket);}
 
 
 	public void run() { // Création de thread qui envoi un message à un client
 		try {
-			DataInputStream in = new DataInputStream(socket.getInputStream());
-			DataOutputStream out = new DataOutputStream(socket.getOutputStream()); 
+			out = new DataOutputStream(socket.getOutputStream()); 
 			out.writeUTF("Hello from server - you are client#" + clientNumber);
+			in = new DataInputStream(socket.getInputStream());
+			boolean exit = false;
 			//			System.out.println("Veuillez entrer une commande: ");
 			//			out.writeUTF(message);
+				
 
 
-			while(true) {
+			while(!exit) {
 				String command = in.readUTF();
-				System.out.println(command);
+				
+				ClientHandler.startDirectory = new File ("Start");
+				ClientHandler.startDirectory.mkdir();
+				ClientHandler.path = ".";
+				
+				String localAddress = ClientHandler.socket.getLocalAddress().toString();
+				StringBuilder stringBuilder = new StringBuilder(localAddress);
+				stringBuilder.deleteCharAt(0);
+				DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd@HH:mm:ss");  
+				LocalDateTime now = LocalDateTime.now();
+				System.out.println("[" + 
+					stringBuilder.toString() + ":" + 
+					ClientHandler.socket.getPort() + " - " + 
+					dateFormatter.format(now) + "] : " + 
+					command);
+				//System.out.println(command);
 				System.out.println(Thread.currentThread().getName() + " -> " + command);
 
 				String directory = "";
@@ -63,8 +81,9 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 						}else {
 							saveFile(path+"/"+directory);
 						}
-						out.writeUTF("Uploaded " + directory);
-					} catch(IOException e) {
+						out.writeUTF("Le fichier " + directory + " a bien été téléversé.");
+						}
+					catch(IOException e) {
 						e.printStackTrace();
 					}
 					break;
@@ -76,13 +95,15 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 						}else {
 							sendFile(path+"/"+directory);
 						}
-						out.writeUTF("Downloaded " + directory);
-					} catch(IOException e) {
+						out.writeUTF("Le fichier " + directory + " a bien été téléchargé.");
+					}
+					catch(IOException e) {
 						e.printStackTrace();
 					}
 					break;
 
 				case "exit":
+					exit = true;
 					out.writeUTF("Fin de la connection...");
 					break;
 
@@ -101,7 +122,7 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 				System.out.println("Couldn't close a socket, what's going on?");}
 			System.out.println("Connection with client# " + clientNumber+ " closed");}
 	}
-	private static  String commandCd(String presentPath, String directory) throws IOException {
+	private static String commandCd(String presentPath, String directory) throws IOException {
 		String newPath = "";
 		File destinationFile = new File(presentPath + "/" + directory);
 		String returnDirectory ="";
@@ -137,30 +158,29 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 	private static void commandLs(String presentPath) throws IOException{
 		DataOutputStream out = new DataOutputStream(socket.getOutputStream()); 
 		File[] files =  new File(presentPath).listFiles();
+		String listFiles ="";
 		for (File file: files) {
-			if(!(file.getName().contains("."))) {
+			//if(!(file.getName().contains("."))) {
 				if (file.isDirectory()) {
-					out.writeUTF("[Folder]" + file.getName());
-
+					listFiles += "[Folder]" + file.getName() + "\n";
 				} else if(file.isFile()) {
-					out.writeUTF("[File]" + file.getName());
+					listFiles += "[File]" + file.getName() + "\n";
 				} else {
-					out.writeUTF("L'élément n'est pas un dossier ou un fichier");
+					listFiles += "L'élément n'est pas un dossier ou un fichier\n";
 				}
-			}
+			//}
 		}
 		if (files.length == 0) {
 			out.writeUTF("Le répertoire ne contient pas de dossier ou de fichier.");
 		}
 
 		out = new DataOutputStream(socket.getOutputStream());
-		out.writeUTF(files.toString());
+		out.writeUTF(listFiles);
 		System.out.println(Thread.currentThread().getName() + " -> " + files.toString());
 	}
 	private static void commandMkdir(String presentPath, String directory) throws IOException {
 		DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 		File destinationFile = new File(presentPath + "/" + directory);
-		out.writeUTF(presentPath);
 		destinationFile.mkdir();
 		if(destinationFile.exists()) {
 			out.writeUTF("Le dossier " + directory +  " a bien été créé");
@@ -176,30 +196,28 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 		FileOutputStream output = new FileOutputStream(path);
 
 		long size = input.readLong();
-		byte[] buffer = new byte[(int)size];
+		byte[] buffer = new byte[4*1024];
 		while (size > 0 && (bytes = input.read(buffer, 0, (int)Math.min(buffer.length, size))) != -1) {
 			output.write(buffer,0,bytes);
 			size -= bytes;
 		}
 		output.close();
-		System.out.println("Le fichier a bien ete televerse");
 	}
 
 	private static void sendFile(String path)throws IOException{
-		int bufferSize;
+		int bufferSize = 0;
 		File newFile = new File(path);
 		FileInputStream input = new FileInputStream(newFile.toString());
 		DataOutputStream output = new DataOutputStream(socket.getOutputStream());
 
-		byte[] buffer = new byte[(int)newFile.length()];
+		byte[] buffer = new byte[4*1024];
 		output.writeLong(newFile.length());
 
-		while((bufferSize = input.read(buffer)) > 0) {
+		while((bufferSize = input.read(buffer)) !=-1) {
 			output.write(buffer, 0, bufferSize);
 			output.flush();
 		}
 		input.close();
-		output.writeUTF("Telechargement...");
 	}
 }
 

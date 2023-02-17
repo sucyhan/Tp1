@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 
 public class Client {
 	private static Socket socket;
+	private static Scanner scanner = new Scanner(System.in);
 	public static void main(String[] args) throws Exception {
 		int port = Server.getPort();
 		String serverAddress = Server.getIP();
@@ -21,67 +22,66 @@ public class Client {
 
 		DataInputStream in = new DataInputStream(socket.getInputStream());
 		DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+		
 		String helloMessageFromServer = in.readUTF();
 		System.out.println(helloMessageFromServer);
-		Thread inputThread = new Thread(new Runnable() {
-			String message;
-
-			public void run() {
-				try {
-					while (true) {
-						System.out.println("\nVeuillez entrer une commande: ");
-						message = in.readUTF();
-						System.out.print(message);
-						if(message.equals("Telechargement...")) {
-							String fileName = in.readUTF();
-							downloadFile(fileName);
-						}
-						if(message.equals("Fin de la connection...")) {
-							break;
-						}
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+		
+		boolean exit = false;
+		while(!exit) {
+			String userInput = scanner.nextLine();
+			String[] expressions = userInput.split(" ");
+			switch (expressions[0]) {
+			case "exit":
+				out.writeUTF(userInput);
+				System.out.println(in.readUTF());
+				exit = true;
+				break;
+			case "download":
+				out.writeUTF(userInput);
+				downloadFile(expressions[1]);
+				System.out.println(in.readUTF());
+				break;
+			case "upload":
+				out.writeUTF(userInput);
+				uploadFile(expressions[1]);
+				System.out.println(in.readUTF());
+				break;
+			default:
+				out.writeUTF(userInput);
+				System.out.println(in.readUTF());
+				break;
+				
 			}
-		});
 
-		Thread outputThread = new Thread(new Runnable() {
-		String message;
-			public void run() {
-				try {
-					while(true) {
-						BufferedReader reader = new BufferedReader (new InputStreamReader(System.in));
-						message = reader.readLine();
-						if(message.startsWith("upload")) {
-							String fileName = message.substring(7);
-							uploadFile(fileName);
-							out.writeUTF(message);
-						}
-						else if(message.startsWith("exit")) {
-							out.writeUTF(message);
-							break;
-						} else {
-							out.writeUTF(message);
-						}
-						
-						
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
+		}
+		scanner.close();
+		socket.close();	
 			
-		});
-
-		inputThread.start();
-		outputThread.start();
-
-		while (outputThread.isAlive()) {
-		}
-		while (inputThread.isAlive()) {
-		}
-		socket.close();
+		
+//		Thread inputThread = new Thread(new Runnable() { String message; public void
+//		run() { try { message = in.readUTF(); System.out.print(message); while (true)
+//		{ if(message.equals("Telechargement...")) { String fileName = in.readUTF();
+//		downloadFile(fileName); } if(message.equals("Fin de la connection...")) {
+//			break; } } } catch (Exception e) { e.printStackTrace(); } } });
+//
+//		Thread outputThread = new Thread(new Runnable() { String message; public void
+//		run() { try { while(true) { BufferedReader reader = new BufferedReader (new
+//				InputStreamReader(System.in)); message = reader.readLine();
+//				if(message.startsWith("upload")) { String fileName = message.substring(7);
+//				uploadFile(fileName); out.writeUTF(message); } else
+//					if(message.startsWith("exit")) { out.writeUTF(message); break; } else {
+//						out.writeUTF(message); }
+//
+//
+//		} } catch (Exception e) { e.printStackTrace(); } }
+//
+//		});
+//
+//		inputThread.start(); outputThread.start();
+//
+//		while (outputThread.isAlive()) { } while (inputThread.isAlive()) { }
+//		socket.close();
+		 
 	}
 		public static int getPort()
 		{
@@ -144,28 +144,28 @@ public class Client {
 		}
 		
 		private static void uploadFile(String fileName)throws IOException {
-		    int bufferSize;
+		    int bufferSize = 0;
 		    File newFile = new File(fileName);
 		    DataOutputStream output = new DataOutputStream(socket.getOutputStream());
-		    FileInputStream input = new FileInputStream(newFile.toString());
+		    FileInputStream input = new FileInputStream(newFile);
 
-		    byte[] buffer = new byte[(int)newFile.length()];
+		    byte[] buffer = new byte[4*1024];
 		    output.writeLong(newFile.length());
-		    while((bufferSize = input.read(buffer)) > 0) {
+		    while((bufferSize = input.read(buffer)) != -1) {
 		        output.write(buffer, 0, bufferSize);
 		        output.flush();
 		    }
 		    input.close();
-		    System.out.println("Le fichier a bien ete televerse");
 		}
 
 		private static void downloadFile(String fileName)throws Exception {
 		    int bytes = 0;
 		    DataInputStream input = new DataInputStream(socket.getInputStream());
 		    FileOutputStream output = new FileOutputStream(fileName);
+		    DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 		    long size = input.readLong();
-		    byte[] buffer = new byte[(int)size];
-		    while (size > 0 && (bytes = input.read(buffer, 0, (int)Math.min(buffer.length, size))) > 0) {
+		    byte[] buffer = new byte[4*1024];
+		    while (size > 0 && (bytes = input.read(buffer, 0, (int)Math.min(buffer.length, size))) != -1) {
 		        output.write(buffer,0,bytes);
 		        size -= bytes;
 		    }
