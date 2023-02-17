@@ -30,6 +30,7 @@ public class Client {
 		while(!exit) {
 			String userInput = scanner.nextLine();
 			String[] expressions = userInput.split(" ");
+			
 			switch (expressions[0]) {
 			case "exit":
 				out.writeUTF(userInput);
@@ -56,31 +57,6 @@ public class Client {
 		}
 		scanner.close();
 		socket.close();	
-			
-		
-//		Thread inputThread = new Thread(new Runnable() { String message; public void
-//		run() { try { message = in.readUTF(); System.out.print(message); while (true)
-//		{ if(message.equals("Telechargement...")) { String fileName = in.readUTF();
-//		downloadFile(fileName); } if(message.equals("Fin de la connection...")) {
-//			break; } } } catch (Exception e) { e.printStackTrace(); } } });
-//
-//		Thread outputThread = new Thread(new Runnable() { String message; public void
-//		run() { try { while(true) { BufferedReader reader = new BufferedReader (new
-//				InputStreamReader(System.in)); message = reader.readLine();
-//				if(message.startsWith("upload")) { String fileName = message.substring(7);
-//				uploadFile(fileName); out.writeUTF(message); } else
-//					if(message.startsWith("exit")) { out.writeUTF(message); break; } else {
-//						out.writeUTF(message); }
-//
-//
-//		} } catch (Exception e) { e.printStackTrace(); } }
-//
-//		});
-//
-//		inputThread.start(); outputThread.start();
-//
-//		while (outputThread.isAlive()) { } while (inputThread.isAlive()) { }
-//		socket.close();
 		 
 	}
 		public static int getPort()
@@ -162,7 +138,6 @@ public class Client {
 		    int bytes = 0;
 		    DataInputStream input = new DataInputStream(socket.getInputStream());
 		    FileOutputStream output = new FileOutputStream(fileName);
-		    DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 		    long size = input.readLong();
 		    byte[] buffer = new byte[4*1024];
 		    while (size > 0 && (bytes = input.read(buffer, 0, (int)Math.min(buffer.length, size))) != -1) {
